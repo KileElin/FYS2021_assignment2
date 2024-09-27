@@ -9,23 +9,61 @@ import os
 # specify directory where file is found
 # check if I'm running the script on my mac or my pc
 os_name = os.name
-if os.name == 'nt': # windows
-    WDIR = "C:\Users\eak504\Documents\FYS2021"
-elif os_name == 'posix': # iOS
+if os.name == 'nt': # windows    
+     WDIR = "c:/Users/eak504/Documents/FYS2021/"
+elif os_name == 'posix': 
+    # iOS
     WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/"
 else: 
     print("Unknown directory")
 
 
-
- # Mac directory
-# 
-
 # specify file name
 file = WDIR + "data_problem2.csv"
 
 # read file to data frame using pd.read_csv(), file is read into a data frame
-df = pd.read_csv(file)
+df = pd.read_csv(file, header=None)
 
 # number of samples and features
 print(df.info)
+
+def create_hist(data):
+    # plot histogram of the data in the data frame. 
+    plt.hist(data, bins=50)
+    plt.xlabel('Data values')
+    plt.ylabel('Number of samples')
+    # save histogram
+    plt.savefig('histogram.png')
+    # show histogram
+    plt.show()
+
+# Call function to produce, print and save the histogram. Since the sample points are in the first row, I index into it by df.iloc[0].
+create_hist(df.iloc[0])
+
+
+# in order to more easily work with the data, I will transpose the dataframe and add column names, 'Samples' and 'Class'
+
+df = df.transpose()
+df.columns = ['Samples', 'Class']
+
+# set the test dataset portion 
+test_size = 0.2
+
+# calculate the number of test samples in each class, since it is a portion, it might not be a whole number, so thus convert to int
+test_counts = (df['Class'].value_counts() * test_size).astype(int)
+
+# Create empty data frames for the train and test sets
+train = pd.DataFrame()
+test = pd.DataFrame()
+
+for cls in test_counts.index:
+    cls_subset = df[df['Class'] == cls]
+    test_samples = cls_subset.sample(int(test_counts[cls]))
+    train_samples = cls_subset.drop(test_samples.index)
+    test = pd.concat([test, test_samples])
+    train = pd.concat([train, train_samples])
+
+# shuffle the sets to randomize order
+train = train.sample(frac=1).reset_index(drop=True)
+test = test.sample(frac=1).reset_index(drop=True)
+
