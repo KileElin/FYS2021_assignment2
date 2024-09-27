@@ -3,10 +3,23 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 import scipy.stats as stats
+import os
+
 
 # specify directory where file is found
-WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/" # Mac directory
-# Windows directory: "C:\Users\eak504\Documents\FYS2021"
+# check if I'm running the script on my mac or my pc
+os_name = os.name
+if os.name == 'nt': # windows
+    WDIR = "C:\Users\eak504\Documents\FYS2021"
+elif os_name == 'posix': # iOS
+    WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/"
+else: 
+    print("Unknown directory")
+
+
+
+ # Mac directory
+# 
 
 # specify file name
 file = WDIR + "data_problem2.csv"
