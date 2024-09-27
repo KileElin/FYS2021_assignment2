@@ -5,10 +5,11 @@ import numpy as np
 import scipy.stats as stats
 
 # specify directory where file is found
-WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/"
+WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/" # Mac directory
+# Windows directory: "C:\Users\eak504\Documents\FYS2021"
 
 # specify file name
-file = WDIR + "SpotifyFeatures.csv"
+file = WDIR + "data_problem2.csv"
 
 # read file to data frame using pd.read_csv(), file is read into a data frame
 df = pd.read_csv(file)
