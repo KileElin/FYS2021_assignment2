@@ -1,0 +1,17 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import random
+import numpy as np
+import scipy.stats as stats
+
+# specify directory where file is found
+WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/"
+
+# specify file name
+file = WDIR + "SpotifyFeatures.csv"
+
+# read file to data frame using pd.read_csv(), file is read into a data frame
+df = pd.read_csv(file)
+
+# number of samples and features
+print(df.info)
