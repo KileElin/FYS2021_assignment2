@@ -114,4 +114,19 @@ print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
 print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
 
 
+# Classify all data points
+df['Predicted_Class'] = df['Samples'].apply(lambda x: bayes_classifier(x, parameters))
 
+# Identify correctly and wrongly classified points
+correctly_classified = df[df['Class'] == df['Predicted_Class']]
+wrongly_classified = df[df['Class'] != df['Predicted_Class']]
+
+# Plotting
+plt.figure(figsize=(10, 6))
+plt.scatter(correctly_classified['Samples'], np.zeros(len(correctly_classified)), color='green', label='Correctly Classified', alpha=0.5, edgecolors='w')
+plt.scatter(wrongly_classified['Samples'], np.zeros(len(wrongly_classified)), color='red', label='Wrongly Classified', alpha=0.5, edgecolors='w')
+plt.xlabel('Sample Values')
+plt.yticks([])  # Hide y-axis as it's not meaningful in this context
+plt.title('Classification Results')
+plt.legend()
+plt.show()
