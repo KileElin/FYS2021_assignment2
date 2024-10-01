@@ -1,164 +1,138 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import random
 import numpy as np
 import scipy.stats as stats
 import os
 
+# Function to estimate parameters for a gamma distribution
 def estimate_gamma_parameters(data):
-    """
-    Estimate the beta parameter for a Gamma distribution.
-    Alpha is assumed to be known and equals 2.
-    """
-    alpha = 2
-    n0 = len(data)
+    alpha = 2  # Assume alpha is known and equals 2
     sum_data = np.sum(data)
-    beta_hat = sum_data / (n0 * alpha)
+    beta_hat = sum_data / (alpha * len(data))
     return beta_hat
 
+# Function to estimate parameters for a Gaussian distribution
 def estimate_gaussian_parameters(data):
-    """
-    Estimate the mu and sigma parameters for a Gaussian distribution.
-    """
-    n1 = len(data)
     mu_hat = np.mean(data)
-    sigma_hat_squared = np.sum((data - mu_hat)**2) / n1
-    sigma_hat = np.sqrt(sigma_hat_squared)
+    sigma_hat = np.std(data, ddof=1)  # ddof=1 for sample standard deviation
     return mu_hat, sigma_hat
 
+# Function to calculate Gaussian probability density function
 def gaussian_pdf(x, mu, sigma):
-
-    """Calculate the probability density of x for a gaussian distribution with parameters mu and sigma"""
-
     return stats.norm.pdf(x, mu, sigma)
 
-def bayes_classifier (sample, parameters):
+# Bayesian classifier function to determine class based on sample and parameters
+def bayes_classifier(sample, parameters):
     posteriors = []
-    for cls, (mu, sigma) in parameters.items():
-        prior = 1 / len(parameters)
-        if cls == 0: # Gamma distribution
-            alpha, beta = parameters
+    for cls, params in parameters.items():
+        prior = 1 / len(parameters)  # Assume uniform prior
+        if cls == 0:  # Gamma distribution
+            alpha, beta = params
             likelihood = stats.gamma.pdf(sample, a=alpha, scale=1/beta)
-        else: # Gaussian distribution
-            mu, sigma = parameters
+        else:  # Gaussian distribution
+            mu, sigma = params
             likelihood = gaussian_pdf(sample, mu, sigma)
         posterior = likelihood * prior
         posteriors.append((cls, posterior))
-    
-    #return the class with the highest posterior probability
     return max(posteriors, key=lambda x: x[1])[0]
 
-# specify directory where file is found
-# check if I'm running the script on my mac or my pc
+# Directory setup based on operating system
 os_name = os.name
-if os.name == 'nt': # windows    
-     WDIR = "c:/Users/eak504/Documents/FYS2021/"
-elif os_name == 'posix': 
-    # iOS
-    WDIR ="/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/FYS_2021/"
-else: 
+if os_name == 'nt':
+    WDIR = "c:/Users/eak504/Documents/FYS2021/"
+elif os_name == 'posix':
+    WDIR = "/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/Kurser/FYS_2021/"
+else:
     print("Unknown directory")
 
-
-# specify file name
 file = WDIR + "data_problem2.csv"
-
-# read file to data frame using pd.read_csv(), file is read into a data frame
 df = pd.read_csv(file, header=None)
 
-# number of samples and features
+# Display basic information about the dataframe
 print(df.info)
 
+# Function to create and save a histogram of the data
 def create_hist(data):
-    # plot histogram of the data in the data frame. 
     plt.hist(data, bins=50)
     plt.xlabel('Data values')
     plt.ylabel('Number of samples')
-    # save histogram
     plt.savefig('histogram.png')
-    # show histogram
     plt.show()
 
-# Call function to produce, print and save the histogram. Since the sample points are in the first row, I index into it by df.iloc[0].
+# Create histogram for the first row of data
 create_hist(df.iloc[0])
 
-
-# in order to more easily work with the data, I will transpose the dataframe and add column names, 'Samples' and 'Class'
-
+# Transpose dataframe and set column names
 df = df.transpose()
 df.columns = ['Samples', 'Class']
 
-# set the test dataset portion 
+# Splitting data into training and testing datasets
 test_size = 0.2
-
-# calculate the number of test samples in each class, since it is a portion, it might not be a whole number, so thus convert to int
-test_counts = (df['Class'].value_counts() * test_size).astype(int)
-
-# Create empty data frames for the train and test sets
 train = pd.DataFrame()
 test = pd.DataFrame()
 
-for cls in test_counts.index:
+for cls in df['Class'].unique():
     cls_subset = df[df['Class'] == cls]
-    test_samples = cls_subset.sample(int(test_counts[cls]))
+    test_samples = cls_subset.sample(frac=test_size)
     train_samples = cls_subset.drop(test_samples.index)
     test = pd.concat([test, test_samples])
     train = pd.concat([train, train_samples])
 
-# shuffle the sets to randomize order
 train = train.sample(frac=1).reset_index(drop=True)
 test = test.sample(frac=1).reset_index(drop=True)
 
-
-# Example data for class C0 and C1
-
-
-data_c0 = df[df['Class'] == 0]['Samples'] # Gamma distribution data
-data_c1 = df[df['Class'] == 1]['Samples'] # Gaussian distribution data
-
-# Estimate parameters
+# Parameter estimation using training data
+data_c0 = train[train['Class'] == 0]['Samples']
+data_c1 = train[train['Class'] == 1]['Samples']
 beta_hat = estimate_gamma_parameters(data_c0)
 mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
 
-print("Estimated Beta for Gamma distribution (C0):", beta_hat)
-print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
-print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
-
-# parameters dictionary
 parameters = {
-    0: (2, beta_hat), #alpha is known and equal to 2
+    0: (2, beta_hat),  # Alpha is known and equals 2
     1: (mu_hat, sigma_hat)
 }
 
-# Classify and calculate accuracy
+# Classification and accuracy calculation
 correct_predictions = 0
 for _, row in test.iterrows():
     predicted_class = bayes_classifier(row['Samples'], parameters)
     if predicted_class == row['Class']:
         correct_predictions += 1
-    
+
 accuracy = correct_predictions / len(test)
-print( f"Accuracy on test set: {accuracy:.2f}")
+print(f"Accuracy on test set: {accuracy:.2f}")
 
-
-plt.hist(data_c0, bins=50, color='green', alpha = 0.7)
-plt.hist(data_c1, bins=50, color='red', alpha = 0.7)
+# Plotting histograms for training data
+plt.hist(train[train['Class'] == 0]['Samples'], bins=50, color='green', alpha=0.7)
+plt.hist(train[train['Class'] == 1]['Samples'], bins=50, color='red', alpha=0.7)
 plt.show()
 
+# Additional analysis and plotting for entire dataset
+data_c0 = df[df['Class'] == 0]['Samples']  # Gamma distribution data
+data_c1 = df[df['Class'] == 1]['Samples']  # Gaussian distribution data
 
-# Classify all data points
+# Estimate parameters for entire dataset
+beta_hat = estimate_gamma_parameters(data_c0)
+mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
+
+print("Estimated Beta for Gamma distribution (C0):", beta_hat)
+# Estimated parameters for Gaussian distribution
+print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
+print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
+
+# Classify all data points using the Bayes classifier
 df['Predicted_Class'] = df['Samples'].apply(lambda x: bayes_classifier(x, parameters))
 
 # Identify correctly and wrongly classified points
 correctly_classified = df[df['Class'] == df['Predicted_Class']]
 wrongly_classified = df[df['Class'] != df['Predicted_Class']]
 
-# Plotting
+# Plotting histograms of correctly and wrongly classified samples
 plt.figure(figsize=(10, 6))
-plt.hist(correctly_classified['Samples'], bins=30, color='green', label='Correctly Classified', alpha=0.6)
-plt.hist(wrongly_classified['Samples'], bins=30, color='red', label='Wrongly Classified', alpha=0.6)
+plt.hist(correctly_classified['Samples'], bins=50, color='green', label='Correctly Classified', alpha=0.6)
+plt.hist(wrongly_classified['Samples'], bins=50, color='red', label='Wrongly Classified', alpha=0.6)
 plt.xlabel('Sample Values')
-plt.ylabel('Frequency')
+plt.ylabel('Number of samples')
 plt.title('Distribution of correctly and wrongly Classified Samples')
 plt.legend()
 plt.savefig('histogram_wrong.png')
