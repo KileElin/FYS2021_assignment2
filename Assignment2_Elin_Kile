@@ -26,17 +26,7 @@ def estimate_gaussian_parameters(data):
     sigma_hat = np.sqrt(sigma_hat_squared)
     return mu_hat, sigma_hat
 
-# Example data for class C0 and C1
-data_c0 = np.array([2.0, 3.0, 2.5, 3.5, 2.8])  # Gamma distribution data
-data_c1 = np.array([10.0, 12.0, 11.5, 9.5, 10.5])  # Gaussian distribution data
 
-# Estimate parameters
-beta_hat = estimate_gamma_parameters(data_c0)
-mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
-
-print("Estimated Beta for Gamma distribution (C0):", beta_hat)
-print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
-print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
 
 # specify directory where file is found
 # check if I'm running the script on my mac or my pc
@@ -98,6 +88,19 @@ for cls in test_counts.index:
 # shuffle the sets to randomize order
 train = train.sample(frac=1).reset_index(drop=True)
 test = test.sample(frac=1).reset_index(drop=True)
+
+
+# Example data for class C0 and C1
+data_c0 = np.array([2.0, 3.0, 2.5, 3.5, 2.8])  # Gamma distribution data
+data_c1 = np.array([10.0, 12.0, 11.5, 9.5, 10.5])  # Gaussian distribution data
+
+# Estimate parameters
+beta_hat = estimate_gamma_parameters(data_c0)
+mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
+
+print("Estimated Beta for Gamma distribution (C0):", beta_hat)
+print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
+print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
 
 
 
