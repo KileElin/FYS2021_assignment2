@@ -26,13 +26,24 @@ def estimate_gaussian_parameters(data):
     sigma_hat = np.sqrt(sigma_hat_squared)
     return mu_hat, sigma_hat
 
+def gaussian_pdf(x, mu, sigma):
+
+    """Calculate the probability density of x for a gaussian distribution with parameters mu and sigma"""
+
+    return stats.norm.pdf(x, mu, sigma)
+
 def bayes_classifier (sample, parameters):
     posteriors = []
     for cls, (mu, sigma) in parameters.items():
         prior = 1 / len(parameters)
-        likelihood = gaussian_pdf(sample, mu, sigma)
+        if cls == 0: # Gamma distribution
+            alpha, beta = parameters
+            likelihood = stats.gamma.pdf(sample, a=alpha, scale=1/beta)
+        else: # Gaussian distribution
+            mu, sigma = parameters
+            likelihood = gaussian_pdf(sample, mu, sigma)
         posterior = likelihood * prior
-        posteriors.append((cls. posterior))
+        posteriors.append((cls, posterior))
     
     #return the class with the highest posterior probability
     return max(posteriors, key=lambda x: x[1])[0]
@@ -113,6 +124,27 @@ print("Estimated Beta for Gamma distribution (C0):", beta_hat)
 print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
 print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
 
+# parameters dictionary
+parameters = {
+    0: (2, beta_hat), #alpha is known and equal to 2
+    1: (mu_hat, sigma_hat)
+}
+
+# Classify and calculate accuracy
+correct_predictions = 0
+for _, row in test.iterrows():
+    predicted_class = bayes_classifier(row['Samples'], parameters)
+    if predicted_class == row['Class']:
+        correct_predictions += 1
+    
+accuracy = correct_predictions / len(test)
+print( f"Accuracy on test set: {accuracy:.2f}")
+
+
+plt.hist(data_c0, bins=50, color='green', alpha = 0.7)
+plt.hist(data_c1, bins=50, color='red', alpha = 0.7)
+plt.show()
+
 
 # Classify all data points
 df['Predicted_Class'] = df['Samples'].apply(lambda x: bayes_classifier(x, parameters))
@@ -123,10 +155,11 @@ wrongly_classified = df[df['Class'] != df['Predicted_Class']]
 
 # Plotting
 plt.figure(figsize=(10, 6))
-plt.scatter(correctly_classified['Samples'], np.zeros(len(correctly_classified)), color='green', label='Correctly Classified', alpha=0.5, edgecolors='w')
-plt.scatter(wrongly_classified['Samples'], np.zeros(len(wrongly_classified)), color='red', label='Wrongly Classified', alpha=0.5, edgecolors='w')
+plt.hist(correctly_classified['Samples'], bins=30, color='green', label='Correctly Classified', alpha=0.6)
+plt.hist(wrongly_classified['Samples'], bins=30, color='red', label='Wrongly Classified', alpha=0.6)
 plt.xlabel('Sample Values')
-plt.yticks([])  # Hide y-axis as it's not meaningful in this context
-plt.title('Classification Results')
+plt.ylabel('Frequency')
+plt.title('Distribution of correctly and wrongly Classified Samples')
 plt.legend()
+plt.savefig('histogram_wrong.png')
 plt.show()
