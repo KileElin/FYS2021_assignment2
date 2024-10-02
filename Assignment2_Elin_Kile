@@ -36,104 +36,113 @@ def bayes_classifier(sample, parameters):
         posteriors.append((cls, posterior))
     return max(posteriors, key=lambda x: x[1])[0]
 
-# Directory setup based on operating system
-os_name = os.name
-if os_name == 'nt':
-    WDIR = "c:/Users/eak504/Documents/FYS2021/"
-elif os_name == 'posix':
-    WDIR = "/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/Kurser/FYS_2021/"
-else:
-    print("Unknown directory")
+average_accuracy = []
+for i in range(10):
+    # Directory setup based on operating system
+    os_name = os.name
+    if os_name == 'nt':
+        WDIR = "c:/Users/eak504/Documents/FYS2021/"
+    elif os_name == 'posix':
+        WDIR = "/Users/elkil7541/Library/CloudStorage/OneDrive-UiTOffice365/Dokumenter/Kurser/FYS_2021/"
+    else:
+        print("Unknown directory")
 
-file = WDIR + "data_problem2.csv"
-df = pd.read_csv(file, header=None)
+    file = WDIR + "data_problem2.csv"
+    df = pd.read_csv(file, header=None)
 
-# Display basic information about the dataframe
-print(df.info)
+    # Display basic information about the dataframe
+    print(df.info)
 
-# Function to create and save a histogram of the data
-def create_hist(data):
-    plt.hist(data, bins=50)
-    plt.xlabel('Data values')
+    # Function to create and save a histogram of the data
+    def create_hist(data):
+        plt.hist(data, bins=50)
+        plt.xlabel('Data values')
+        plt.ylabel('Number of samples')
+        plt.savefig('histogram.png')
+        #plt.show()
+
+    # Create histogram for the first row of data
+    create_hist(df.iloc[0])
+
+    # Transpose dataframe and set column names
+    df = df.transpose()
+    df.columns = ['Samples', 'Class']
+
+    # Splitting data into training and testing datasets
+    test_size = 0.2
+    train = pd.DataFrame()
+    test = pd.DataFrame()
+
+    for cls in df['Class'].unique():
+        cls_subset = df[df['Class'] == cls]
+        test_samples = cls_subset.sample(frac=test_size)
+        train_samples = cls_subset.drop(test_samples.index)
+        test = pd.concat([test, test_samples])
+        train = pd.concat([train, train_samples])
+
+    train = train.sample(frac=1).reset_index(drop=True)
+    test = test.sample(frac=1).reset_index(drop=True)
+
+    # Parameter estimation using training data
+    data_c0 = train[train['Class'] == 0]['Samples']
+    data_c1 = train[train['Class'] == 1]['Samples']
+    beta_hat = estimate_gamma_parameters(data_c0)
+    mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
+
+    parameters = {
+        0: (2, beta_hat),  # Alpha is known and equals 2
+        1: (mu_hat, sigma_hat)
+    }
+
+    # Classification and accuracy calculation
+    correct_predictions = 0
+    for _, row in test.iterrows():
+        predicted_class = bayes_classifier(row['Samples'], parameters)
+        if predicted_class == row['Class']:
+            correct_predictions += 1
+
+    accuracy = correct_predictions / len(test)
+    print(f"Accuracy on test set: {accuracy:.3f}")
+    average_accuracy.append(accuracy)
+
+    # Plotting histograms for training data
+    plt.hist(train[train['Class'] == 0]['Samples'], bins=50, color='green', alpha=0.7)
+    plt.hist(train[train['Class'] == 1]['Samples'], bins=50, color='red', alpha=0.7)
+    #plt.show()
+
+    # Additional analysis and plotting for entire dataset
+    data_c0 = df[df['Class'] == 0]['Samples']  # Gamma distribution data
+    data_c1 = df[df['Class'] == 1]['Samples']  # Gaussian distribution data
+
+    # Estimate parameters for entire dataset
+    beta_hat = estimate_gamma_parameters(data_c0)
+    mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
+
+    print("Estimated Beta for Gamma distribution (C0):", beta_hat)
+    # Estimated parameters for Gaussian distribution
+    print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
+    print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
+
+    # Classify all data points using the Bayes classifier
+    df['Predicted_Class'] = df['Samples'].apply(lambda x: bayes_classifier(x, parameters))
+
+    # Identify correctly and wrongly classified points
+    correctly_classified = df[df['Class'] == df['Predicted_Class']]
+    wrongly_classified = df[df['Class'] != df['Predicted_Class']]
+
+    # Plotting histograms of correctly and wrongly classified samples
+    plt.figure(figsize=(10, 6))
+    plt.hist(correctly_classified['Samples'], bins=50, color='green', label='Correctly Classified', alpha=0.6)
+    plt.hist(wrongly_classified['Samples'], bins=50, color='red', label='Wrongly Classified', alpha=0.6)
+    plt.xlabel('Sample Values')
     plt.ylabel('Number of samples')
-    plt.savefig('histogram.png')
-    plt.show()
+    plt.title('Distribution of correctly and wrongly Classified Samples')
+    plt.legend()
+    plt.savefig('histogram_wrong.png')
+    #plt.show()
 
-# Create histogram for the first row of data
-create_hist(df.iloc[0])
+# print(average_accuracy)
+accuracy_mean = np.mean(average_accuracy)
+accuracy_std = np.std(average_accuracy)
 
-# Transpose dataframe and set column names
-df = df.transpose()
-df.columns = ['Samples', 'Class']
-
-# Splitting data into training and testing datasets
-test_size = 0.2
-train = pd.DataFrame()
-test = pd.DataFrame()
-
-for cls in df['Class'].unique():
-    cls_subset = df[df['Class'] == cls]
-    test_samples = cls_subset.sample(frac=test_size)
-    train_samples = cls_subset.drop(test_samples.index)
-    test = pd.concat([test, test_samples])
-    train = pd.concat([train, train_samples])
-
-train = train.sample(frac=1).reset_index(drop=True)
-test = test.sample(frac=1).reset_index(drop=True)
-
-# Parameter estimation using training data
-data_c0 = train[train['Class'] == 0]['Samples']
-data_c1 = train[train['Class'] == 1]['Samples']
-beta_hat = estimate_gamma_parameters(data_c0)
-mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
-
-parameters = {
-    0: (2, beta_hat),  # Alpha is known and equals 2
-    1: (mu_hat, sigma_hat)
-}
-
-# Classification and accuracy calculation
-correct_predictions = 0
-for _, row in test.iterrows():
-    predicted_class = bayes_classifier(row['Samples'], parameters)
-    if predicted_class == row['Class']:
-        correct_predictions += 1
-
-accuracy = correct_predictions / len(test)
-print(f"Accuracy on test set: {accuracy:.2f}")
-
-# Plotting histograms for training data
-plt.hist(train[train['Class'] == 0]['Samples'], bins=50, color='green', alpha=0.7)
-plt.hist(train[train['Class'] == 1]['Samples'], bins=50, color='red', alpha=0.7)
-plt.show()
-
-# Additional analysis and plotting for entire dataset
-data_c0 = df[df['Class'] == 0]['Samples']  # Gamma distribution data
-data_c1 = df[df['Class'] == 1]['Samples']  # Gaussian distribution data
-
-# Estimate parameters for entire dataset
-beta_hat = estimate_gamma_parameters(data_c0)
-mu_hat, sigma_hat = estimate_gaussian_parameters(data_c1)
-
-print("Estimated Beta for Gamma distribution (C0):", beta_hat)
-# Estimated parameters for Gaussian distribution
-print("Estimated Mu for Gaussian distribution (C1):", mu_hat)
-print("Estimated Sigma for Gaussian distribution (C1):", sigma_hat)
-
-# Classify all data points using the Bayes classifier
-df['Predicted_Class'] = df['Samples'].apply(lambda x: bayes_classifier(x, parameters))
-
-# Identify correctly and wrongly classified points
-correctly_classified = df[df['Class'] == df['Predicted_Class']]
-wrongly_classified = df[df['Class'] != df['Predicted_Class']]
-
-# Plotting histograms of correctly and wrongly classified samples
-plt.figure(figsize=(10, 6))
-plt.hist(correctly_classified['Samples'], bins=50, color='green', label='Correctly Classified', alpha=0.6)
-plt.hist(wrongly_classified['Samples'], bins=50, color='red', label='Wrongly Classified', alpha=0.6)
-plt.xlabel('Sample Values')
-plt.ylabel('Number of samples')
-plt.title('Distribution of correctly and wrongly Classified Samples')
-plt.legend()
-plt.savefig('histogram_wrong.png')
-plt.show()
+print(f'Accuracy: {accuracy_mean:.2f} +/- {accuracy_std}')
