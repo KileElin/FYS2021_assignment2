@@ -36,6 +36,15 @@ def bayes_classifier(sample, parameters):
         posteriors.append((cls, posterior))
     return max(posteriors, key=lambda x: x[1])[0]
 
+# Function to create and save a histogram of the data
+def create_hist(data):
+    plt.hist(data, bins=50)
+    plt.xlabel('Data values')
+    plt.ylabel('Number of samples')
+    plt.savefig('histogram.png')
+    #plt.show()
+
+
 average_accuracy = []
 for i in range(10):
     # Directory setup based on operating system
@@ -52,14 +61,6 @@ for i in range(10):
 
     # Display basic information about the dataframe
     print(df.info)
-
-    # Function to create and save a histogram of the data
-    def create_hist(data):
-        plt.hist(data, bins=50)
-        plt.xlabel('Data values')
-        plt.ylabel('Number of samples')
-        plt.savefig('histogram.png')
-        #plt.show()
 
     # Create histogram for the first row of data
     create_hist(df.iloc[0])
